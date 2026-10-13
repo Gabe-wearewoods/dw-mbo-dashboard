@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>MBO Campaign Dashboard | Diamond Willow</title>
+  <link rel="icon" href="assets/logo-mark.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Serif+Text&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="mast">
+    <div class="wrap">
+      <div class="mast-bar">
+        <img class="mast-logo" src="assets/wordmark-white.svg" alt="Diamond Willow" width="194" height="21">
+        <div class="mast-actions">
+          <span class="live" id="live" hidden></span>
+          <button class="btn-ghost" type="button" id="printBtn">Save as PDF</button>
+        </div>
+      </div>
+      <h1 class="mast-title">MBO campaign performance</h1>
+      <p class="mast-lede">Live results for the Management Buyout Guide campaign, measured against the benchmarks in the campaign measurement plan.</p>
+      <dl class="mast-meta" id="meta"></dl>
+    </div>
+  </header>
+
+  <main id="app" aria-live="polite">
+    <div class="wrap state" id="state">
+      <p class="state-text">Loading the latest campaign data</p>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap foot-inner">
+      <img src="assets/logo-mark.svg" alt="" width="40" height="40">
+      <p>Prepared by Woods for Diamond Willow. Values come directly from LinkedIn, HubSpot and Google Analytics and refresh every hour. Responses are logged by the Diamond Willow team.</p>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
