@@ -283,7 +283,7 @@
   function renderEmail(d) {
     var em = d.email || {};
     var b = d.benchmarks || {};
-    var head = sectionHead('02', 'Promotional emails', 'Every campaign send from HubSpot, by sender. New sends appear automatically.', 'HubSpot', 'Sends since ' + fmtShortYmd(d.campaignStart));
+    var head = sectionHead('02', 'Promotional emails', 'Every marketing email sent from HubSpot since the campaign started. New sends appear automatically.', 'HubSpot', 'Sends since ' + fmtShortYmd(d.campaignStart));
     if (em.status !== 'ok') {
       return '<section class="section wrap" id="emails">' + head +
         pendingWrap('<div class="card"><span class="skel" style="width:40%"></span><br><span class="skel" style="width:70%"></span><br><span class="skel" style="width:55%"></span></div>',
@@ -296,7 +296,7 @@
     var sends = em.sends || [];
     var showPos = em.positive && em.positive.status === 'ok';
     var rows = sends.length ? sends.map(function (s) {
-      return '<tr><td><div class="cell-main">' + esc(s.asset) + '</div><div class="cell-sub">' + esc(s.sender) + '’s list</div></td>' +
+      return '<tr><td><div class="cell-main">' + esc(s.asset) + '</div>' + (s.list ? '<div class="cell-sub">' + esc(s.list) + '</div>' : '') + '</td>' +
         '<td class="nowrap">' + esc(fmtDate(s.sentAt)) + '</td>' +
         '<td class="num">' + fmtInt(s.delivered) + '</td>' +
         '<td class="num"><span class="mini">' + (fmtPct(s.deliveryRate) || '0%') + meter(s.deliveryRate, b.emailDelivery) + '</span></td>' +
