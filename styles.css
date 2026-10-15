@@ -43,7 +43,17 @@ h1, h2, h3, p, dl, dd { margin: 0; }
 /* ---------- Masthead ---------- */
 .mast { background: var(--navy); color: var(--white); padding: 32px 0 56px; }
 .mast-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
-.mast-logo { width: 176px; height: auto; }
+.mast-logo { width: 176px; height: auto; display: block; }
+.foot-logo { width: 40px; height: 40px; flex: none; display: block; }
+.sync { display: inline-flex; align-items: center; gap: 8px; }
+.sync::before { content: ""; width: 7px; height: 7px; background: var(--sky); }
+.sync-live::before { background: #7fd1a3; }
+.sync-updating::before { background: var(--sky); animation: blink 1s ease-in-out infinite; }
+.sync-stale::before { background: #f2b366; }
+@keyframes blink { 50% { opacity: .25; } }
+.spinner { display: inline-block; width: 12px; height: 12px; margin-right: 10px; border: 2px solid var(--line); border-top-color: var(--navy); border-radius: 50%; animation: spin .8s linear infinite; vertical-align: -1px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sync-updating::before, .spinner { animation: none; } }
 .mast-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .mast-title {
   font-family: var(--serif); font-weight: 400;

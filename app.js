@@ -202,9 +202,14 @@
       '<div><dt>Campaign start</dt><dd>' + fmtYmd(d.campaignStart) + '</dd></div>' +
       '<div><dt>Last refreshed</dt><dd>' + esc(fmtDateTime(d.generatedAt)) + '</dd></div>' +
       '<div><dt>Refresh rate</dt><dd>Every hour</dd></div>';
+    meta.innerHTML += '<div><dt>Status</dt><dd><span id="sync" class="sync sync-updating">Updating</span></dd></div>';
+    if (d.live) renderLive(d.live);
+  }
+
+  function renderLive(l) {
     var live = document.getElementById('live');
-    if (d.live && d.live.status === 'ok' && isNum(d.live.mboGuideActiveUsers)) {
-      var n = d.live.mboGuideActiveUsers;
+    if (l && l.status === 'ok' && isNum(l.mboGuideActiveUsers)) {
+      var n = l.mboGuideActiveUsers;
       live.innerHTML = '<span class="live-dot" aria-hidden="true"></span><span><b>' + fmtInt(n) + '</b> ' +
         (n === 1 ? 'person' : 'people') + ' on the MBO Guide now</span>';
       live.title = 'Active in the last 30 minutes, from Google Analytics realtime';
@@ -512,21 +517,82 @@
     postHeight();
   }
 
+  /* ---------------- data loading ----------------
+     1. Show the last good data saved in this browser instantly.
+     2. Fetch fresh data with a timeout and automatic retries.
+     3. Never replace a working view with an error. */
+  var STORE_KEY = 'dwDash:v2:' + (API || LOCAL || '').slice(-24);
+  var hasView = false;
+  var retryTimer = null;
+  var attempt = 0;
+
+  function dataUrl(extra) {
+    if (LOCAL) return LOCAL;
+    if (!API || !KEY) return null;
+    return API + (API.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(KEY) + (extra || '');
+  }
+
+  function readSaved() {
+    try { var t = localStorage.getItem(STORE_KEY); return t ? JSON.parse(t) : null; } catch (e) { return null; }
+  }
+  function save(d) {
+    // The live counter is not saved: an old "people on the page now" number would be wrong.
+    try { var copy = JSON.parse(JSON.stringify(d)); delete copy.live; localStorage.setItem(STORE_KEY, JSON.stringify(copy)); } catch (e) { /* storage unavailable */ }
+  }
+
+  function setSync(state) {
+    var el = document.getElementById('sync');
+    if (!el) return;
+    el.className = 'sync sync-' + state;
+    el.textContent = state === 'live' ? 'Up to date' : state === 'updating' ? 'Updating' : 'Showing saved data, reconnecting';
+  }
+
+  function getJson(url, ms) {
+    var ctrl = 'AbortController' in window ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms);
+    return fetch(url, { cache: 'no-store', redirect: 'follow', signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function (j) { clearTimeout(timer); return j; }, function (e) { clearTimeout(timer); throw e; });
+  }
+
+  function loadLive() {
+    var url = dataUrl('&part=live');
+    if (!url || LOCAL) return;
+    getJson(url, 15000).then(function (j) {
+      if (j && j.live) { renderLive(j.live); postHeight(); }
+    }).catch(function () { /* the live counter is optional */ });
+  }
+
+  function scheduleRetry() {
+    clearTimeout(retryTimer);
+    var waits = [2000, 5000, 10000, 20000, 40000, 60000];
+    var wait = waits[Math.min(attempt, waits.length - 1)];
+    attempt++;
+    retryTimer = setTimeout(load, wait);
+  }
+
   function load() {
-    var url = LOCAL ? LOCAL : (API && KEY ? API + (API.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(KEY) : null);
+    var url = dataUrl('');
     if (!url) {
       showState('Private dashboard', 'This dashboard opens from the Diamond Willow website. Please use the link and password shared with you.');
       return;
     }
-    fetch(url, { cache: 'no-store' })
-      .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    if (hasView) setSync('updating');
+    getJson(url, 25000)
       .then(function (d) {
         if (d.error === 'unauthorized') return showState('Access denied', 'The access key is not valid. Please contact Woods.');
-        if (d.error) return showState('Data is on its way', d.message || 'The first data refresh has not run yet. Please check back shortly.');
+        if (d.error) throw new Error(d.error);
+        attempt = 0;
+        save(d);
         render(d);
+        hasView = true;
+        setSync('live');
+        loadLive();
       })
       .catch(function () {
-        showState('Data temporarily unavailable', 'The dashboard could not reach its data source. Please refresh the page in a minute.');
+        if (hasView) { setSync('stale'); }
+        else { showState('Connecting to the data source', 'This can take a few seconds. The dashboard will appear automatically.'); }
+        scheduleRetry();
       });
   }
 
@@ -534,6 +600,9 @@
   var rt;
   window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { drawAllColumns(); postHeight(); }, 150); });
   if ('ResizeObserver' in window) new ResizeObserver(postHeight).observe(document.body);
-  setInterval(load, 15 * 60 * 1000);
+
+  var saved = readSaved();
+  if (saved && !LOCAL) { render(saved); hasView = true; }
   load();
+  setInterval(load, 10 * 60 * 1000);
 })();
