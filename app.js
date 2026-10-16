@@ -124,6 +124,20 @@
       '<div class="kpi-foot"><span class="bench">Benchmark <b>' + fmtBench(o.bench) + '</b></span>' + status(o.value, o.bench) + '</div></article>';
   }
 
+  /* Count tile for metrics the plan does not benchmark. */
+  function kpiCount(o) {
+    var head =
+      '<div class="kpi-channel">' + esc(o.channel) + '</div>' +
+      '<div class="kpi-head"><span class="kpi-label">' + esc(o.label) + '</span>' + info(o.tip) + '</div>';
+    if (o.pending) {
+      return '<article class="card kpi">' + head + '<div class="kpi-pending is-pending"><div class="pending-content" aria-hidden="true">' +
+        '<div class="kpi-value"><span class="skel skel-lg"></span></div></div>' + pendingNote('Under construction', o.pending) + '</div></article>';
+    }
+    return '<article class="card kpi">' + head +
+      '<div class="kpi-value">' + (isNum(o.value) ? fmtInt(o.value) : '<small>No data yet</small>') + '</div>' +
+      '<div class="kpi-foot"><span class="bench">' + esc(o.note) + '</span></div></article>';
+  }
+
   /* ---------------- column chart ---------------- */
   function fillDays(daily, start) {
     if (!daily || !daily.length) return [];
@@ -229,8 +243,6 @@
     var mbo = findAsset(d, 'mbo-guide');
     var liPending = li.status !== 'ok' ? 'Waiting for LinkedIn to approve API access.' : null;
     var emPending = em.status !== 'ok' ? 'Connecting to HubSpot.' : null;
-    var secPending = !mbo ? 'Connecting to Google Analytics.' :
-      (mbo.sections.status !== 'ok' || !isNum(mbo.sections.overall)) ? 'Section data is collecting since ' + fmtShortYmd(d.breakdownStart) + '.' : null;
 
     var tiles = [
       kpi({ channel: 'LinkedIn posts', label: 'Engagement rate', value: li.totals && li.totals.engagementRate, bench: b.liEngagement, pending: liPending,
@@ -244,14 +256,15 @@
       kpi({ channel: 'Promotional emails', label: 'Positive reply rate', value: em.positive && em.positive.rate, bench: b.emailPositive,
         pending: emPending || (em.positive && em.positive.status === 'ok' ? null : 'Replies are being collected. The rate appears once the team reviews them.'),
         tip: 'Replies the team marked Positive in the responses sheet, divided by delivered emails. Automatic replies are excluded.' }),
-      kpi({ channel: 'MBO Guide page', label: 'Sections viewed', value: mbo && mbo.sections.overall, bench: b.sectionViews, pending: secPending,
-        tip: 'Average share of the guide’s sections each visitor scrolled into view.' }),
+      kpiCount({ channel: 'MBO Guide page', label: 'Page visits', value: mbo && mbo.views, note: 'Since ' + fmtYmd(d.campaignStart),
+        pending: !mbo ? 'Connecting to Google Analytics.' : null,
+        tip: 'Page views of the MBO Guide recorded by Google Analytics since the campaign started, from every traffic source.' }),
       kpi({ channel: 'MBO Guide page', label: 'CTA click through rate', value: mbo && mbo.cta.ctr, bench: b.ctaCtr,
         pending: !mbo ? 'Connecting to Google Analytics.' : null,
         tip: 'Clicks on the page’s calls to action divided by page visits.' })
     ];
     return '<section class="section wrap" id="scorecard">' +
-      sectionHead('', 'Scorecard', 'Every benchmarked metric in the measurement plan, at a glance. The black tick on each bar marks the benchmark.', 'All channels', 'Campaign to date') +
+      sectionHead('', 'Scorecard', 'The campaign’s key metrics at a glance. The black tick on each bar marks the benchmark.', 'All channels', 'Campaign to date') +
       '<div class="grid grid-kpi-3">' + [tiles[2], tiles[3], tiles[4]].join('') + '</div>' +
       '<div class="grid grid-kpi-4">' + [tiles[0], tiles[1], tiles[5], tiles[6]].join('') + '</div></section>';
   }
